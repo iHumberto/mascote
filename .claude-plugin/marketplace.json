@@ -1,0 +1,15 @@
+{
+  "name": "mods-do-humberto",
+  "owner": {
+    "name": "iHumberto",
+    "url": "https://github.com/iHumberto"
+  },
+  "plugins": [
+    {
+      "name": "mascote",
+      "source": "./",
+      "description": "Marvin, o andróide paranóide, no painel lateral: cota de 5h, cota semanal, tokens e custo."
+    }
+  ],
+  "description": "Mods do Claude Code: o mascote."
+}

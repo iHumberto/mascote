@@ -1,0 +1,12 @@
+{
+  "name": "mascote",
+  "version": "0.1.0",
+  "description": "Marvin, o andróide paranóide, no painel lateral: HP = cota de 5h, MP = cota semanal, XP = tokens, e o visor dele muda conforme o Claude trabalha.",
+  "types": "./types/index.d.ts",
+  "author": {
+    "name": "iHumberto",
+    "url": "https://github.com/iHumberto"
+  },
+  "license": "GPL-3.0-or-later",
+  "homepage": "https://github.com/iHumberto/mascote"
+}

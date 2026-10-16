@@ -1,0 +1,37 @@
+# Tipos que o Claude Code escreve na pasta do mod ao carregá-lo em
+# desenvolvimento: é a declaração da API dele, não código deste projeto, e não
+# se redistribui daqui. Quem clonar recebe a sua ao carregar o mod.
+.claude-plugin/types/claude-code/
+
+# Configuração local do Claude Code nesta pasta (permissões, servidores MCP,
+# instruções minhas) — nada disso é do mod.
+.claude/
+.mcp.json
+AGENTS.local.md
+CLAUDE.local.md
+
+# Segredos: nenhum token, chave ou env file entra aqui.
+.env
+.env.*
+*.env
+*.pem
+*.key
+secrets/
+
+# Dependências e saída de build
+node_modules/
+dist/
+build/
+*.tsbuildinfo
+
+# Editor e sistema operacional
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Logs e rascunhos
+*.log
+tmp/
+scratch/
