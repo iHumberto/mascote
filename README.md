@@ -4,6 +4,10 @@ Marvin, o andróide paranóide, em pixel art no painel lateral do Claude Code,
 no estilo de uma ficha de RPG: ele mostra quanto ainda resta da sua cota e faz
 cara de emoji enquanto o Claude trabalha.
 
+![Marvin revira os olhos, pisca, arregala enquanto uma ferramenta roda, fecha os olhos ao entregar a resposta e apaga quando a cota acaba](assets/marvin.gif)
+
+Os cinco humores, no mesmo ritmo do painel: 420 ms por quadro.
+
 ```
      (a cara do Marvin,
        20x20 pixels)
@@ -104,6 +108,13 @@ largura, `/mascote` abre na hora.
   duas são `OCUPADO`.
 - `types/index.d.ts` — o contrato do estado guardado em `$.state`, que sobrevive
   a um hot reload.
+- `tools/` — o GIF lá de cima sai do **mesmo** `buildGrid` que o painel chama, e
+  não de um desenho à parte: `frames.mjs` despeja os quadros em JSON e `gif.py`
+  (Pillow) os monta. Mexeu no sprite, regenera e a imagem acompanha:
+
+  ```sh
+  node tools/frames.mjs | python3 tools/gif.py assets/marvin.gif
+  ```
 - o placar **geral** é o que atravessa sessões: fica no `$.store` do mod (um
   JSON na configuração do Claude Code) sob a chave `totals`, relido no
   `session.start`. Ao fim de cada turno o mod manda para lá só o que esta

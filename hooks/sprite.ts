@@ -22,7 +22,7 @@ const H = 20
 /** Pixel sem cor: o `Raster` pinta o fundo padrão do terminal ali. */
 const VAZIO = '.'
 
-const PALETA: Record<string, number> = {
+export const PALETA: Record<string, number> = {
   l: 0xf2f2ee, // brilho do casco
   w: 0xdcdcd7, // casco
   s: 0xa5a5a0, // sombra do casco
