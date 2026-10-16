@@ -58,9 +58,41 @@ O humor vem dos eventos da sessão, e quem o conta são as pupilas:
 | 😌 | os segundos seguintes a uma resposta entregue | fecham em dois arcos |
 
 Abaixo da cara, uma linha diz o estado em cor — `LIVRE` em verde, `OCUPADO` em
-âmbar, `EXAUSTO` em vermelho — e a legenda conta o que ele está fazendo, no tom
-dele ("lendo código. que tédio.", "escrevendo. vai dar errado.", "delegando.
-não vai ajudar.").
+âmbar, `EXAUSTO` em vermelho — e sob ela a legenda conta o que ele está fazendo.
+
+## O que ele diz
+
+A legenda segue o evento da sessão, e ele nunca se anima:
+
+| Fala | Quando |
+| --- | --- |
+| `ocioso. que maravilha.` | entre turnos, sem nada para fazer |
+| `pensando. não que adiante.` | do início do turno até a primeira ferramenta — e de volta a cada ferramenta que termina |
+| `que alegria. que felicidade.` | os seis quadros (≈2,5 s) seguintes a uma resposta entregue, antes de voltar ao tédio |
+| `a cota acabou. eu avisei.` | fim de turno com 12% ou menos da janela de 5 horas |
+
+Enquanto uma ferramenta roda, a legenda é o que ele acha dela:
+
+| Fala | Ferramenta |
+| --- | --- |
+| `lendo código. que tédio.` | `Read` |
+| `procurando. como sempre.` | `Glob`, `Grep` |
+| `escrevendo. vai dar errado.` | `Edit`, `Write`, `NotebookEdit` |
+| `rodando comandos. de novo.` | `Bash`, `BashOutput` |
+| `na web. sem esperança.` | `WebFetch`, `WebSearch` |
+| `delegando. não vai ajudar.` | `Agent`, `Task` |
+| `lendo o manual. que vida.` | `Skill` |
+| `fazendo listas. que vida.` | `TodoWrite` |
+| `trabalhando. como sempre.` | qualquer outra que ele não conheça pelo nome |
+
+E a última linha de cada placar conta tarefas e ingratidão:
+
+| Fala | Placar | Quando |
+| --- | --- | --- |
+| `nenhuma tarefa. nem um obrigado.` | Esta sessão | nada concluído ainda |
+| `1 tarefa, 0 obrigados. que novidade.` | Esta sessão | da primeira em diante |
+| `nada feito ainda. que alívio.` | Geral | nenhuma sessão anterior contada |
+| `348 tarefas. ninguém agradeceu.` | Geral | da primeira em diante |
 
 ## Instalando
 
