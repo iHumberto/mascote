@@ -1,6 +1,6 @@
 {
   "name": "mascote",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Marvin, o andróide paranóide, no painel lateral: HP = cota de 5h, MP = cota semanal, XP = tokens, e o visor dele muda conforme o Claude trabalha.",
   "types": "./types/index.d.ts",
   "author": {

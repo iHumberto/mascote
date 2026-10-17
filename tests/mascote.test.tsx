@@ -277,3 +277,68 @@ test('a cota se atualiza sozinha a cada cinco minutos', async ($, on) => {
   expect(await depois.find({ type: 'Text', text: /65%/ })).toBeDefined()
   await depois.unmount()
 })
+
+test('cota intacta na abertura não conta recarga antes da primeira chamada', async ($, on) => {
+  const relogio = mock.clock(on, { now: Date.parse('2026-10-15T12:00:00Z') })
+  mock.store(on)
+  on('session.start', ($, e) => ({ cwd: e.cwd }))
+  on('command.register', ($, e) => ({ value: { command: e.name } }))
+  on('ui.open', () => ({ value: { isPlaced: true as const } }))
+  on('ui.panes', () => ({ value: [] }))
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+
+  // O que o engine já tem ao abrir: nada gasto, mas um prazo de recarga que é
+  // de uma janela que ainda não nasceu.
+  let usado = 0
+  on('session.usage', () => ({
+    value: {
+      startedAt: relogio.now(),
+      context: { tokens: 0, window: 200_000 },
+      rateLimits: [
+        {
+          kind: 'five_hour',
+          percentUsed: usado,
+          resetsAt: new Date(relogio.now() + 5 * 60 * 60_000).toISOString(),
+        },
+      ],
+    },
+  }))
+
+  await $.session.start({
+    cwd: '/tmp/mascote',
+    surface: 'terminal',
+    isInteractive: true,
+  })
+
+  // Aberto e parado: a barra está cheia e nenhum prazo corre.
+  const parado = await $.ui.mount({ plugin: 'mascote', surface: 'terminal', ...PANE })
+  expect(await parado.find({ type: 'Text', text: /100%/ })).toBeDefined()
+  expect(await parado.find({ type: 'Text', text: /a janela nem começou/ })).toBeDefined()
+  expect(await parado.find({ type: 'Text', text: /recarrega em/ })).toBeUndefined()
+  await parado.unmount()
+
+  // Uma hora de ócio não gasta a janela nem adianta a recarga.
+  await relogio.advance(60 * 60_000)
+  const ainda = await $.ui.mount({ plugin: 'mascote', surface: 'terminal', ...PANE })
+  expect(await ainda.find({ type: 'Text', text: /recarrega em/ })).toBeUndefined()
+  await ainda.unmount()
+
+  // A primeira chamada abre a janela: dali em diante o prazo é real e conta.
+  usado = 4
+  await $.session.measure({
+    context: { tokens: 0, window: 200_000 },
+    rateLimits: [
+      {
+        kind: 'five_hour',
+        percentUsed: usado,
+        resetsAt: new Date(relogio.now() + 5 * 60 * 60_000).toISOString(),
+      },
+    ],
+    changed: ['rateLimits'],
+  })
+
+  const contando = await $.ui.mount({ plugin: 'mascote', surface: 'terminal', ...PANE })
+  expect(await contando.find({ type: 'Text', text: /96%/ })).toBeDefined()
+  expect(await contando.find({ type: 'Text', text: /recarrega em 4h5[89]|recarrega em 5h00/ })).toBeDefined()
+  await contando.unmount()
+})

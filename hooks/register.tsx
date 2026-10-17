@@ -42,6 +42,9 @@ const ALEGRIA = 'que alegria. que felicidade.'
 const ESGOTADO = 'a cota acabou. eu avisei.'
 const QUALQUER = 'trabalhando. como sempre.'
 
+/** Quando a janela de cota ainda não nasceu: não há recarga a contar. */
+const INTACTA = 'a janela nem começou'
+
 const mood = atom({ plugin: 'mascote', key: 'mood' } as const, 'livre' as MascoteMood)
 const label = atom({ plugin: 'mascote', key: 'label' } as const, PARADO)
 const frame = atom({ plugin: 'mascote', key: 'frame' } as const, 0)
@@ -50,6 +53,7 @@ const mp = atom({ plugin: 'mascote', key: 'mp' } as const, null as MascoteGauge)
 const career = atom({ plugin: 'mascote', key: 'totals' } as const, ZERO)
 const tally = atom({ plugin: 'mascote', key: 'tally' } as const, ZERO)
 const synced = atom({ plugin: 'mascote', key: 'synced' } as const, ZERO)
+const lido = atom({ plugin: 'mascote', key: 'lido' } as const, false)
 
 /** O que o Marvin anda fazendo, por ferramenta, no humor dele. */
 const AFAZERES: Record<string, string> = {
@@ -188,9 +192,19 @@ function formatarEsperaLonga(resetsAt: number | null, agora: number): string | n
   return dias > 0 ? `${dias}D ${relogio}` : relogio
 }
 
+/**
+ * Lê uma das janelas de cota.
+ *
+ * `medida` é se esta sessão já ouviu uma resposta de verdade. A janela de 5h
+ * nasce na primeira chamada, não quando o Claude Code abre — e o `resetsAt`
+ * que o engine tem antes disso é de uma janela que ainda não existe, um prazo
+ * que correria enquanto ninguém digitou nada. Então a recarga só vale quando a
+ * janela está em curso: alguma cota gasta, ou uma leitura desta sessão.
+ */
 function lerJanela(
   limites: readonly { kind: string; percentUsed: number; resetsAt?: string }[],
   tipo: string,
+  medida: boolean,
 ): MascoteGauge {
   const janela = limites.find(uma => uma.kind === tipo)
   if (janela === undefined) return null
@@ -198,6 +212,7 @@ function lerJanela(
   return {
     percentLeft: Math.max(0, Math.min(100, Math.round(100 - janela.percentUsed))),
     resetsAt: Number.isNaN(quando) ? null : quando,
+    emCurso: janela.percentUsed > 0 || medida,
   }
 }
 
@@ -229,8 +244,9 @@ async function sincronizar($: EngineInterface): Promise<void> {
  */
 async function medirCota($: EngineInterface): Promise<void> {
   const uso = await $.session.usage()
-  await update($, hp, () => lerJanela(uso.rateLimits, 'five_hour'))
-  await update($, mp, () => lerJanela(uso.rateLimits, 'seven_day'))
+  const medida = await read($, lido)
+  await update($, hp, () => lerJanela(uso.rateLimits, 'five_hour', medida))
+  await update($, mp, () => lerJanela(uso.rateLimits, 'seven_day', medida))
   if (uso.cost !== undefined) {
     await update($, tally, placar => ({ ...placar, usd: uso.cost?.usd ?? placar.usd }))
   }
@@ -319,8 +335,10 @@ export const register: Register = on => {
 
   // As cotas: a janela de 5h vira HP, a semanal vira MP.
   on('session.measure', async ($, e, next) => {
-    await update($, hp, () => lerJanela(e.rateLimits, 'five_hour'))
-    await update($, mp, () => lerJanela(e.rateLimits, 'seven_day'))
+    // Só chega aqui depois de uma resposta: daqui em diante a janela existe.
+    await update($, lido, () => true)
+    await update($, hp, () => lerJanela(e.rateLimits, 'five_hour', true))
+    await update($, mp, () => lerJanela(e.rateLimits, 'seven_day', true))
     if (e.cost !== undefined) {
       const usd = e.cost.usd
       await update($, tally, placar => ({ ...placar, usd }))
@@ -430,7 +448,8 @@ export const register: Register = on => {
     ) => {
       const sobra = janela?.percentLeft ?? null
       const cheio = sobra === null ? 0 : Math.round((sobra / 100) * barra)
-      const espera = formatar(janela?.resetsAt ?? null, agora)
+      const espera =
+        janela !== null && !janela.emCurso ? INTACTA : formatar(janela?.resetsAt ?? null, agora)
 
       return (
         <Box flexDirection="column">
@@ -442,7 +461,11 @@ export const register: Register = on => {
           </Box>
           <Text dimColor>
             {'   '}
-            {espera === null ? 'sem janela de cota' : `recarrega em ${espera}`}
+            {espera === null
+              ? 'sem janela de cota'
+              : espera === INTACTA
+                ? INTACTA
+                : `recarrega em ${espera}`}
           </Text>
         </Box>
       )

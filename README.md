@@ -42,6 +42,11 @@ Os cinco humores, no mesmo ritmo do painel: 420 ms por quadro.
 | **XP** | os tokens contados, separados em entrada, saída e cache. `in` é só o que não veio do cache — com o cache ligado, quase tudo cai em `cache`, e um `in` de três dígitos ao lado de um `cache` de milhões é o normal |
 | **$** | o custo e quantos turnos foram concluídos (ele não comemora) |
 
+A janela de 5 horas nasce na primeira chamada do dia, não quando o Claude Code
+abre: enquanto nada foi gasto, a legenda diz `a janela nem começou` em vez de um
+prazo — um painel aberto e parado não desconta um tempo que ainda não corre. Da
+primeira resposta em diante a recarga é a que o servidor informou.
+
 As barras de HP e MP ocupam 75% da largura do painel — o resto da linha é a
 sigla e o percentual. O placar aparece duas vezes: **Esta sessão**, o que a
 sessão em curso gastou, e **Geral**, a soma de todas as sessões desta máquina,

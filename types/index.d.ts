@@ -18,6 +18,12 @@ export type MascoteGauge = {
   percentLeft: number
   /** Quando a janela zera, em milissegundos de `$.clock.now()`; null se o servidor não disse. */
   resetsAt: number | null
+  /**
+   * Se a janela já está correndo. Ela nasce na primeira chamada da sessão, não
+   * quando o Claude Code abre: até lá o `resetsAt` é de uma janela que ainda
+   * não existe, e não há recarga a contar.
+   */
+  emCurso: boolean
 } | null
 
 /** Um placar: tokens, custo e turnos concluídos. */
@@ -48,6 +54,8 @@ declare module 'claude-code' {
       tally: MascoteTally
       /** Quanto do placar desta sessão já foi somado ao geral. */
       synced: MascoteTally
+      /** Se uma resposta já foi medida nesta sessão — então as janelas existem. */
+      lido: boolean
     }
   }
 }
