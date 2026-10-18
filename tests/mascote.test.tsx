@@ -66,6 +66,35 @@ test('as cotas viram HP e MP no painel', async ($, on) => {
   await ui.unmount()
 })
 
+test('o contexto da conversa vira ST no painel', async ($, on) => {
+  mock.clock(on, { now: Date.parse('2026-10-15T12:00:00Z') })
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+
+  // 39% ocupado: 61% de sobra, barra em ocre.
+  await $.session.measure({
+    context: { tokens: 78_000, window: 200_000, percent: 39 },
+    rateLimits: [],
+    changed: ['context'],
+  })
+
+  const cheio = await $.ui.mount({ plugin: 'mascote', surface: 'terminal', ...PANE })
+  expect(await cheio.find({ type: 'Text', text: /61%/ })).toBeDefined()
+  expect(await cheio.find({ type: 'Text', text: /122k tokens de sobra, por enquanto\./ })).toBeDefined()
+  await cheio.unmount()
+
+  // Abaixo de 15% de sobra, a legenda avisa que vai esquecer tudo.
+  await $.session.measure({
+    context: { tokens: 180_000, window: 200_000, percent: 90 },
+    rateLimits: [],
+    changed: ['context'],
+  })
+
+  const quaseCheio = await $.ui.mount({ plugin: 'mascote', surface: 'terminal', ...PANE })
+  expect(await quaseCheio.find({ type: 'Text', text: /10%/ })).toBeDefined()
+  expect(await quaseCheio.find({ type: 'Text', text: /só 20k tokens de sobra\. vai esquecer tudo\./ })).toBeDefined()
+  await quaseCheio.unmount()
+})
+
 test('o bichinho fica ocupado no turno e conta a missão no fim', async ($, on) => {
   mock.clock(on, { now: Date.parse('2026-10-15T12:00:00Z') })
   mock.store(on)

@@ -35,6 +35,20 @@ export type MascoteTally = {
   missions: number
 }
 
+/**
+ * O quanto ainda cabe no contexto desta conversa, visto como stamina. Ao
+ * contrário de HP e MP, não recarrega num prazo: esvazia com cada resposta e
+ * só volta a subir numa compactação.
+ */
+export type MascoteContexto = {
+  /** Quanto da janela ainda sobra, 0 a 100. */
+  percentLeft: number
+  /** Tokens ocupados pela última resposta medida. */
+  tokens: number
+  /** O tamanho da janela de contexto do modelo, em tokens. */
+  window: number
+} | null
+
 declare module 'claude-code' {
   interface PluginState {
     mascote: {
@@ -48,6 +62,8 @@ declare module 'claude-code' {
       hp: MascoteGauge
       /** Cota semanal (`seven_day`), desenhada como MP. */
       mp: MascoteGauge
+      /** Contexto da conversa, desenhado como ST. */
+      st: MascoteContexto
       /** O placar de todas as sessões, espelho do `$.store`. */
       totals: MascoteTally
       /** Placar da sessão. */

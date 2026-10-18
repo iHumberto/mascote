@@ -8,7 +8,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { MascoteGauge, MascoteMood, MascoteTally } from '../types'
+import type { MascoteContexto, MascoteGauge, MascoteMood, MascoteTally } from '../types'
 import { SPRITE_COLUMNS, SPRITE_ROWS, buildCells } from './sprite'
 
 const PANE = 'mascote'
@@ -35,6 +35,9 @@ const COTA_MS = 5 * 60_000
 /** Abaixo disso na janela de 5h o visor dele quase apaga. */
 const EXAUSTO_ABAIXO_DE = 12
 
+/** Abaixo disso de contexto livre, a legenda do ST vira alerta. */
+const CONTEXTO_BAIXO_ABAIXO_DE = 15
+
 /** As falas, no tom de quem tem um cérebro do tamanho de um planeta. */
 const PENSANDO = 'pensando. não que adiante.'
 const PARADO = 'ocioso. que maravilha.'
@@ -50,6 +53,7 @@ const label = atom({ plugin: 'mascote', key: 'label' } as const, PARADO)
 const frame = atom({ plugin: 'mascote', key: 'frame' } as const, 0)
 const hp = atom({ plugin: 'mascote', key: 'hp' } as const, null as MascoteGauge)
 const mp = atom({ plugin: 'mascote', key: 'mp' } as const, null as MascoteGauge)
+const st = atom({ plugin: 'mascote', key: 'st' } as const, null as MascoteContexto)
 const career = atom({ plugin: 'mascote', key: 'totals' } as const, ZERO)
 const tally = atom({ plugin: 'mascote', key: 'tally' } as const, ZERO)
 const synced = atom({ plugin: 'mascote', key: 'synced' } as const, ZERO)
@@ -216,6 +220,26 @@ function lerJanela(
   }
 }
 
+/** A janela de contexto que `$.session.usage()` e `session.measure` dão, virando ST. */
+function lerContexto(contexto: { tokens?: number; window: number; percent?: number }): MascoteContexto {
+  if (contexto.tokens === undefined || contexto.percent === undefined) return null
+
+  return {
+    percentLeft: Math.max(0, Math.min(100, Math.round(100 - contexto.percent))),
+    tokens: contexto.tokens,
+    window: contexto.window,
+  }
+}
+
+/** O que ele diz da própria memória, conforme o que ainda cabe nela. */
+function contarContexto(ctx: MascoteContexto): string {
+  if (ctx === null) return 'sem leitura ainda'
+  const livres = formatarNumero(Math.max(0, Math.round((ctx.percentLeft / 100) * ctx.window)))
+  if (ctx.percentLeft <= CONTEXTO_BAIXO_ABAIXO_DE) return `só ${livres} tokens de sobra. vai esquecer tudo.`
+
+  return `${livres} tokens de sobra, por enquanto.`
+}
+
 /**
  * Leva para o placar geral o que esta sessão ainda não mandou: o `$.store` é
  * relido na hora, porque outra sessão pode ter escrito a dela no meio.
@@ -247,6 +271,7 @@ async function medirCota($: EngineInterface): Promise<void> {
   const medida = await read($, lido)
   await update($, hp, () => lerJanela(uso.rateLimits, 'five_hour', medida))
   await update($, mp, () => lerJanela(uso.rateLimits, 'seven_day', medida))
+  await update($, st, () => lerContexto(uso.context))
   if (uso.cost !== undefined) {
     await update($, tally, placar => ({ ...placar, usd: uso.cost?.usd ?? placar.usd }))
   }
@@ -339,6 +364,7 @@ export const register: Register = on => {
     await update($, lido, () => true)
     await update($, hp, () => lerJanela(e.rateLimits, 'five_hour', true))
     await update($, mp, () => lerJanela(e.rateLimits, 'seven_day', true))
+    await update($, st, () => lerContexto(e.context))
     if (e.cost !== undefined) {
       const usd = e.cost.usd
       await update($, tally, placar => ({ ...placar, usd }))
@@ -418,12 +444,13 @@ export const register: Register = on => {
     // O sprite é um `Raster`, que só o terminal desenha.
     const Raster = e.surface === 'terminal' ? $.ui.resolve(e).Raster : null
 
-    const [humor, legenda, quadro, vida, magia, placar, carreira, agora] = await Promise.all([
+    const [humor, legenda, quadro, vida, magia, folego, placar, carreira, agora] = await Promise.all([
       read($, mood),
       read($, label),
       read($, frame),
       read($, hp),
       read($, mp),
+      read($, st),
       read($, tally),
       read($, career),
       $.clock.now(),
@@ -466,6 +493,27 @@ export const register: Register = on => {
               : espera === INTACTA
                 ? INTACTA
                 : `recarrega em ${espera}`}
+          </Text>
+        </Box>
+      )
+    }
+
+    /** A barra do contexto, com o que ainda cabe na memória embaixo — sem prazo de recarga. */
+    const medidorContexto = (ctx: MascoteContexto) => {
+      const sobra = ctx?.percentLeft ?? null
+      const cheio = sobra === null ? 0 : Math.round((sobra / 100) * barra)
+
+      return (
+        <Box flexDirection="column">
+          <Box>
+            <Text bold color="#d9a521">ST </Text>
+            <Text color="#d9a521">{'█'.repeat(cheio)}</Text>
+            <Text color="#473a12">{'█'.repeat(barra - cheio)}</Text>
+            <Text>{sobra === null ? '   --' : ` ${String(sobra).padStart(3)}%`}</Text>
+          </Box>
+          <Text dimColor>
+            {'   '}
+            {contarContexto(ctx)}
           </Text>
         </Box>
       )
@@ -521,6 +569,8 @@ export const register: Register = on => {
         {medidor('HP', vida, '#ef5f5f', '#4a1f1f')}
         <Box height={1} />
         {medidor('MP', magia, '#4da6ff', '#1b3550', formatarEsperaLonga)}
+        <Box height={1} />
+        {medidorContexto(folego)}
         <Box height={1} />
         {bloco('Esta sessão', placar, contarSessao(placar.missions))}
         <Box height={1} />

@@ -22,6 +22,9 @@ Os cinco humores, no mesmo ritmo do painel: 420 ms por quadro.
  MP ████████████████░░░░░░  72%
     recarrega em 3D 09H15m
 
+ ST █████████████░░░░░░░░░  61%
+    122k tokens de sobra, por enquanto.
+
  Esta sessão
  XP 2.0k tokens
     in 1.2k · out 340 · cache 500
@@ -39,6 +42,7 @@ Os cinco humores, no mesmo ritmo do painel: 420 ms por quadro.
 | --- | --- |
 | **HP** | a janela de cota de 5 horas (`five_hour`), e quando ela recarrega |
 | **MP** | a janela semanal (`seven_day`), com a espera em dias, horas e minutos |
+| **ST** | o contexto desta conversa: quanto ainda cabe antes de uma compactação |
 | **XP** | os tokens contados, separados em entrada, saída e cache. `in` é só o que não veio do cache — com o cache ligado, quase tudo cai em `cache`, e um `in` de três dígitos ao lado de um `cache` de milhões é o normal |
 | **$** | o custo e quantos turnos foram concluídos (ele não comemora) |
 
@@ -47,8 +51,13 @@ abre: enquanto nada foi gasto, a legenda diz `a janela nem começou` em vez de u
 prazo — um painel aberto e parado não desconta um tempo que ainda não corre. Da
 primeira resposta em diante a recarga é a que o servidor informou.
 
-As barras de HP e MP ocupam 75% da largura do painel — o resto da linha é a
-sigla e o percentual. O placar aparece duas vezes: **Esta sessão**, o que a
+ST não tem prazo: ao contrário de HP e MP, o contexto não recarrega num
+horário marcado, só esvazia a cada resposta e volta a subir numa compactação.
+Abaixo de 15% de sobra a legenda vira alerta: `só 20k tokens de sobra. vai
+esquecer tudo.` em vez do `122k tokens de sobra, por enquanto.` de sempre.
+
+As barras de HP, MP e ST ocupam 75% da largura do painel — o resto da linha é
+a sigla e o percentual. O placar aparece duas vezes: **Esta sessão**, o que a
 sessão em curso gastou, e **Geral**, a soma de todas as sessões desta máquina,
 guardada entre elas.
 
@@ -169,6 +178,10 @@ largura, `/mascote` abre na hora.
   sessão espera, e a janela de 5h recarrega sem ninguém digitar nada. A chamada
   sem argumentos não vai à rede: devolve os números que a linha de status já
   mediu, então nenhuma conferida dessas conta para o limite.
+- ST vem dos mesmos dois caminhos, mas do campo `context` em vez de
+  `rateLimits`: é da sessão, não da conta, e some `tokens`/`percent` até a
+  primeira resposta da janela viva — até lá a barra fica em `--` e a legenda
+  diz `sem leitura ainda`.
 
 ```sh
 claude plugin validate .  # o que o motor vê
